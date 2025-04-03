@@ -1,0 +1,9 @@
+name: Test Model
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - run: python3 -m pip install tensorflow
+    - run: python3 threat_classifier.py
