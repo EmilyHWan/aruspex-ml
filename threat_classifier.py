@@ -12,7 +12,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 # Generate synthetic data
-n_samples = 500  # Increased dataset size from 100
+n_samples = 500  # Increased dataset size
 signals = np.random.rand(n_samples) * 10  # Random signals between 0 and 10
 labels = (signals > 5).astype(int)  # Threat if signal > 5
 
@@ -66,8 +66,8 @@ tuner = kt.Hyperband(
 tuner.search(X_train, y_train, epochs=50, validation_data=(X_val, y_val), verbose=1)
 
 # Get the best model
-best_model = tuner.get_best_models(num_models=1)[0]
-best_hps = tuner.get_best_hyperparameters(num_models=1)[0]
+best_model = tuner.get_best_models()[0]  # Fixed: Removed num_models=1
+best_hps = tuner.get_best_hyperparameters()[0]  # Fixed: Removed num_models=1
 
 # Evaluate the best model on the test set
 test_loss, test_accuracy = best_model.evaluate(X_test, y_test, verbose=0)
