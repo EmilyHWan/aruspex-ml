@@ -28,24 +28,23 @@ X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, r
 # Define the model-building function for Keras Tuner
 def build_model(hp):
     model = tf.keras.Sequential()
-    model.add(tf.keras.Input(shape=(2,)))  # Updated input shape for 2 features
+    model.add(tf.keras.Input(shape=(2,)))  # Input shape for 2 features
     model.add(tf.keras.layers.Dense(
         units=hp.Int('units_1', min_value=1, max_value=16, step=1),
         activation='relu',
-        kernel_regularizer=tf.keras.regularizers.l2(hp.Float('l2_1', min_value=1e-4, max_value=1e-1, sampling='log'))  # Increased regularization
+        kernel_regularizer=tf.keras.regularizers.l2(hp.Float('l2_1', min_value=1e-5, max_value=1e-2, sampling='log'))
     ))
-    model.add(tf.keras.layers.Dropout(hp.Float('dropout_1', min_value=0.0, max_value=0.3, step=0.1)))
+    model.add(tf.keras.layers.BatchNormalization())  # Added batch normalization
     model.add(tf.keras.layers.Dense(
         units=hp.Int('units_2', min_value=1, max_value=16, step=1),
         activation='relu',
-        kernel_regularizer=tf.keras.regularizers.l2(hp.Float('l2_2', min_value=1e-4, max_value=1e-1, sampling='log'))  # Increased regularization
+        kernel_regularizer=tf.keras.regularizers.l2(hp.Float('l2_2', min_value=1e-5, max_value=1e-2, sampling='log'))
     ))
-    model.add(tf.keras.layers.Dropout(hp.Float('dropout_2', min_value=0.0, max_value=0.3, step=0.1)))
     model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
     
     model.compile(
         optimizer=tf.keras.optimizers.Adam(
-            hp.Float('learning_rate', min_value=1e-4, max_value=1e-3, sampling='log')  # Narrowed learning rate range
+            hp.Float('learning_rate', min_value=1e-4, max_value=1e-1, sampling='log')  # Extended learning rate range
         ),
         loss='binary_crossentropy',
         metrics=['accuracy']
@@ -56,7 +55,7 @@ def build_model(hp):
 tuner = kt.Hyperband(
     build_model,
     objective='val_accuracy',
-    max_epochs=50,
+    max_epochs=100,  # Increased max epochs
     factor=3,
     directory='my_dir',
     project_name='threat_classifier'
@@ -65,22 +64,47 @@ tuner = kt.Hyperband(
 # Search for the best hyperparameters
 tuner.search(X_train, y_train, epochs=50, validation_data=(X_val, y_val), verbose=1)
 
-# Get the best model
-best_model = tuner.get_best_models()[0]  # Fixed: Removed num_models=1
-best_hps = tuner.get_best_hyperparameters()[0]  # Fixed: Removed num_models=1
+# Get the best hyperparameters
+best_hps = tuner.get_best_hyperparameters()[0]
 
-# Evaluate the best model on the test set
+# Rebuild the model with the best hyperparameters
+best_model = build_model(best_hps)
+
+# Evaluate the rebuilt model on the test set (before retraining)
 test_loss, test_accuracy = best_model.evaluate(X_test, y_test, verbose=0)
-print(f"\nTest Accuracy: {test_accuracy:.2f}")
-print(f"Test Loss: {test_loss:.2f}")
+print(f"\nInitial Test Accuracy (before retraining): {test_accuracy:.2f}")
+print(f"Initial Test Loss (before retraining): {test_loss:.2f}")
 
-# Train the best model again to get history for plotting, with early stopping
+# Custom callback to print test accuracy and loss at the end of each epoch
+class TestCallback(tf.keras.callbacks.Callback):
+    def __init__(self, test_data):
+        super(TestCallback, self).__init__()
+        self.test_data = test_data
+
+    def on_epoch_end(self, epoch, logs=None):
+        x_test, y_test = self.test_data
+        test_loss, test_accuracy = self.model.evaluate(x_test, y_test, verbose=0)
+        print(f"\nEpoch {epoch + 1} - Test Accuracy: {test_accuracy:.2f}, Test Loss: {test_loss:.2f}")
+
+# Train the rebuilt model with early stopping and test callback
 early_stopping = tf.keras.callbacks.EarlyStopping(
     monitor='val_loss',
     patience=10,
     restore_best_weights=True
 )
-history = best_model.fit(X_train, y_train, epochs=50, validation_data=(X_val, y_val), callbacks=[early_stopping], verbose=1)
+test_callback = TestCallback((X_test, y_test))
+history = best_model.fit(X_train, y_train, epochs=50, validation_data=(X_val, y_val), callbacks=[early_stopping, test_callback], verbose=1)
+
+# Print average validation accuracy and loss
+avg_val_accuracy = np.mean(history.history['val_accuracy'])
+avg_val_loss = np.mean(history.history['val_loss'])
+print(f"\nAverage Validation Accuracy: {avg_val_accuracy:.2f}")
+print(f"Average Validation Loss: {avg_val_loss:.2f}")
+
+# Evaluate the model on the test set (after retraining)
+test_loss, test_accuracy = best_model.evaluate(X_test, y_test, verbose=0)
+print(f"\nTest Accuracy (after retraining): {test_accuracy:.2f}")
+print(f"Test Loss (after retraining): {test_loss:.2f}")
 
 # Plot training and validation accuracy
 plt.figure(figsize=(12, 4))
@@ -116,7 +140,7 @@ lr_accuracy = accuracy_score(y_test, lr_pred)
 print(f"\nLogistic Regression Test Accuracy: {lr_accuracy:.2f}")
 
 # Predict for a new signal
-test_signal = np.array([[5.5, 5.5**2]])  # Include the squared value for the test signal
+test_signal = np.array([[5.5, 5.5**2]])  # Raw signal and squared value
 nn_pred = best_model.predict(test_signal, verbose=0)
 lr_pred = lr.predict(test_signal)
 print(f"\nNeural Network - Signal 5.5 -> Threat probability: {nn_pred[0][0]:.2f}")
