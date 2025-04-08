@@ -25,3 +25,8 @@ jobs:
     - name: Run tests
       run: |
         pytest
+    - name: Set environment variables to suppress TensorFlow warnings
+      run: |
+          echo "CUDA_VISIBLE_DEVICES=" >> $GITHUB_ENV
+          echo "TF_CPP_MIN_LOG_LEVEL=3" >> $GITHUB_ENV  # Suppress TensorFlow logging (0=debug, 1=info, 2=warning, 3=error)
+   
