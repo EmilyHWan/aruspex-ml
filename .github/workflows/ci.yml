@@ -24,7 +24,7 @@ jobs:
         python --version
         python -m pip --version
         echo "Installing scikit-learn:"
-        python -m pip install scikit-learn==1.2.2
+        python -m pip install scikit-learn==1.3.0
         python -c "import sklearn; print('scikit-learn version:', sklearn.__version__)"  # Verify scikit-learn is importable
         echo "Installing numpy:"
         python -m pip install numpy==1.24.3
