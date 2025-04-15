@@ -1,7 +1,15 @@
-# Aruspex-ML: Predictions with TensorFlow
+# Aruspex-ML
+
+## ZKML Performance Dashboard
+This dashboard visualizes the performance of our ZKML system for autonomous weapons verification. It displays proof generation times and accuracy metrics for simulated missions, using Palantir's Blueprint toolkit.
+
+To run the dashboard:
+1. Navigate to the 'zkml-dashboard/' directory
+2. Run 'npm install' to install dependencies
+3. Run 'npm dev' to launch the dashboad (uses Vite)
 
 ## Threat Classifier
-A TF neural network that takes signals, predicts threat probabilities, and outputs odds.
+A TensorFlow neural network that takes signals, predicts threat probabilities, and outputs odds.
 
 #### Usage
 ```
