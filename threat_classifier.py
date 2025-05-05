@@ -4,7 +4,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import keras_tuner as kt
+import matplotlib
+matplotlib.use('Agg')  # Use Agg backend for non-GUI environments
 import matplotlib.pyplot as plt
+# ... rest of your code ...
+plt.savefig('accuracy_loss_plot.png')
+# Remove plt.show() since it fails without a displ
 import os
 
 # Set random seed for reproducibility
