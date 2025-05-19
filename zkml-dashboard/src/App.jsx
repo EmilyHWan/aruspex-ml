@@ -4,6 +4,8 @@ import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import zkmlData from './data/zkmlData';
 import "@blueprintjs/core/lib/css/blueprint.css";
+import React from 'react';
+import AuditChatbotWidget from './components/AuditChatbotWidget';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -60,6 +62,14 @@ function App() {
       <Button intent="primary" text="Refresh Data" style={{ marginTop: '20px' }} />
     </div>
   );
+
+  return (
+    <div className="dashboard">
+        <h1>ZKML Dashboard</h1>
+        <AuditChatbotWidget />
+    </div>
+);
+
 }
 
 export default App;
